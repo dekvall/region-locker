@@ -27,23 +27,25 @@ package com.regionlocker;
 import com.google.inject.Provides;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 import lombok.AccessLevel;
 import lombok.Setter;
 import net.runelite.api.Client;
+import net.runelite.api.MessageNode;
 import net.runelite.api.Point;
 import net.runelite.api.RenderOverview;
+import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
+import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatCommandManager;
+import net.runelite.client.chat.ChatMessageBuilder;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -52,7 +54,7 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
-import net.runelite.http.api.chat.ChatClient;
+import net.runelite.client.util.Text;
 
 @PluginDescriptor(
 		name = RegionLockerPlugin.PLUGIN_NAME,
@@ -64,7 +66,6 @@ public class RegionLockerPlugin extends Plugin
 	static final String PLUGIN_NAME = "ChunkLite";
 	static final String CONFIG_KEY = "regionlocker";
 	private static final String CHUNK_COMMAND = "!chunks";
-	private final ChatClient chatClient = new ChatClient();
 
 	@Inject
 	private Client client;
@@ -99,9 +100,6 @@ public class RegionLockerPlugin extends Plugin
 	@Inject
 	private ChatCommandManager chatCommandManager;
 
-	@Inject
-	private ScheduledExecutorService executor;
-
 	@Setter(AccessLevel.PACKAGE)
 	private boolean unlockKeyPressed = false;
 
@@ -120,6 +118,7 @@ public class RegionLockerPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
+		chatCommandManager.registerCommandAsync(CHUNK_COMMAND, this::chunkAmountLookup);
 		regionLocker = new RegionLocker(client, config, configManager);
 		overlayManager.add(regionLockerOverlay);
 		overlayManager.add(regionBorderOverlay);
@@ -218,5 +217,26 @@ public class RegionLockerPlugin extends Plugin
 		{
 			clientToolbar.removeNavigation(titleBarButton);
 		}
+	}
+
+	private void chunkAmountLookup(ChatMessage chatMessage, String message)
+	{
+		if (!config.chunkCommand()) return;
+
+		int totalChunks = Text.fromCSV(config.unlockedRegions()).size();
+
+		String response = new ChatMessageBuilder()
+				.append(ChatColorType.NORMAL)
+				.append("Total chunks")
+				.append(ChatColorType.NORMAL)
+				.append(" unlocked: ")
+				.append(ChatColorType.HIGHLIGHT)
+				.append(String.valueOf(totalChunks))
+				.build();
+
+		final MessageNode messageNode = chatMessage.getMessageNode();
+		messageNode.setRuneLiteFormatMessage(response);
+		chatMessageManager.update(messageNode);
+		client.refreshChat();
 	}
 }
