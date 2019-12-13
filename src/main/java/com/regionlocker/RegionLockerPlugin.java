@@ -32,23 +32,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 import lombok.AccessLevel;
 import lombok.Setter;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
-import net.runelite.api.MessageNode;
 import net.runelite.api.Point;
 import net.runelite.api.RenderOverview;
-import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatCommandManager;
-import net.runelite.client.chat.ChatMessageBuilder;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.ChatInput;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
@@ -58,7 +52,6 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
-import static net.runelite.client.util.Text.sanitize;
 import net.runelite.http.api.chat.ChatClient;
 
 @PluginDescriptor(
@@ -127,7 +120,6 @@ public class RegionLockerPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		chatCommandManager.registerCommandAsync(CHUNK_COMMAND, this::chunkAmountLookup, this::chunkAmountSubmit);
 		regionLocker = new RegionLocker(client, config, configManager);
 		overlayManager.add(regionLockerOverlay);
 		overlayManager.add(regionBorderOverlay);
@@ -226,75 +218,5 @@ public class RegionLockerPlugin extends Plugin
 		{
 			clientToolbar.removeNavigation(titleBarButton);
 		}
-	}
-
-	private boolean chunkAmountSubmit(ChatInput chatInput, String value)
-	{
-		final int kc = SlayerAreas.getAreas().size();
-		if (kc <= 0)
-		{
-			return false;
-		}
-
-		final String playerName = client.getLocalPlayer().getName();
-
-		executor.execute(() ->
-		{
-			try
-			{
-				chatClient.submitKc(playerName, "chunks", kc);
-			}
-			catch (Exception ex)
-			{
-
-			}
-			finally
-			{
-				chatInput.resume();
-			}
-		});
-
-		return true;
-	}
-
-	private void chunkAmountLookup(ChatMessage chatMessage, String message)
-	{
-		if (!config.chunkCommand()) return;
-
-		ChatMessageType type = chatMessage.getType();
-
-		final String player;
-		if (type.equals(ChatMessageType.PRIVATECHATOUT))
-		{
-			player = client.getLocalPlayer().getName();
-		}
-		else
-		{
-			player = sanitize(chatMessage.getName());
-		}
-
-		int kc = 0;
-		try
-		{
-			kc = chatClient.getKc(player, "chunks");
-		}
-		catch (IOException ex)
-		{
-			return;
-		}
-
-		String response = new ChatMessageBuilder()
-				.append(ChatColorType.NORMAL)
-				.append("Total chunks")
-				.append(ChatColorType.NORMAL)
-				.append(" unlocked: ")
-				.append(ChatColorType.HIGHLIGHT)
-				.append(String.valueOf(kc))
-				.build();
-
-		final MessageNode messageNode = chatMessage.getMessageNode();
-		messageNode.setRuneLiteFormatMessage(response);
-		chatMessageManager.update(messageNode);
-		client.refreshChat();
 	}
 }
