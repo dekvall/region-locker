@@ -31,7 +31,7 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.Keybind;
 
-@ConfigGroup(RegionLockerPlugin.CONFIG_KEY)
+@ConfigGroup("regionlocker")
 public interface RegionLockerConfig extends Config
 {
 	@ConfigItem(
@@ -54,17 +54,6 @@ public interface RegionLockerConfig extends Config
 	default boolean renderRegionBorders()
 	{
 		return false;
-	}
-
-	@ConfigItem(
-			keyName = "chunkCommand",
-			name = "Chunks command",
-			description = "Configures whether the chunk command is enabled<br> This command shows your total unlocked chunks<br> !chunks",
-			position = 2
-	)
-	default boolean chunkCommand()
-	{
-		return true;
 	}
 
 	@ConfigItem(
@@ -223,17 +212,6 @@ public interface RegionLockerConfig extends Config
 			position = 17
 	)
 	default boolean drawRegionId()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-			keyName = "chunkPickerButton",
-			name = "Enable Chunk Picker button",
-			description = "Adds a button in the navigation bar to go to the Chunk Picker website",
-			position = 18
-	)
-	default boolean chunkPickerButton()
 	{
 		return true;
 	}

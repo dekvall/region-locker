@@ -26,40 +26,32 @@ package com.regionlocker;
 
 import com.google.inject.Provides;
 import java.awt.Rectangle;
-import java.awt.image.BufferedImage;
 import javax.inject.Inject;
 import lombok.AccessLevel;
 import lombok.Setter;
 import net.runelite.api.Client;
-import net.runelite.api.MessageNode;
 import net.runelite.api.Point;
 import net.runelite.api.RenderOverview;
-import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatCommandManager;
-import net.runelite.client.chat.ChatMessageBuilder;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.LinkBrowser;
-import net.runelite.client.util.Text;
 
 @PluginDescriptor(
-		name = RegionLockerPlugin.PLUGIN_NAME,
-		description = "Settings for the ChunkLite client.",
-		tags = {"region", "locker", "chunk", "map", "square"}
+		name = "Region Locker",
+		description = "Settings for the region locker.",
+		tags = {"region", "locker", "chunk", "map", "square", "chunklite"}
 )
 public class RegionLockerPlugin extends Plugin
 {
@@ -118,13 +110,11 @@ public class RegionLockerPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		chatCommandManager.registerCommandAsync(CHUNK_COMMAND, this::chunkAmountLookup);
 		regionLocker = new RegionLocker(client, config, configManager);
 		overlayManager.add(regionLockerOverlay);
 		overlayManager.add(regionBorderOverlay);
 		keyManager.registerKeyListener(inputListener);
 		setKeys();
-		setButton(config.chunkPickerButton());
 	}
 
 	@Override
@@ -135,7 +125,6 @@ public class RegionLockerPlugin extends Plugin
 		overlayManager.remove(regionBorderOverlay);
 		keyManager.unregisterKeyListener(inputListener);
 		RegionLocker.renderLockedRegions = false;
-		setButton(false);
 	}
 
 	@Subscribe
@@ -147,7 +136,6 @@ public class RegionLockerPlugin extends Plugin
 		}
 
 		setKeys();
-		setButton(config.chunkPickerButton());
 		regionLocker.readConfig();
 	}
 
@@ -196,47 +184,5 @@ public class RegionLockerPlugin extends Plugin
 	{
 		RegionLockerInput.UNLOCK_KEY = config.unlockKey();
 		RegionLockerInput.BLOCK_KEY = config.blacklistKey();
-	}
-
-	private void setButton(boolean enabled)
-	{
-		if (enabled)
-		{
-			final BufferedImage iconImage = ImageUtil.getResourceStreamFromClass(getClass(), "chunk.png");
-
-			titleBarButton = NavigationButton.builder()
-					.tab(false)
-					.tooltip("Go to Chunk Picker")
-					.icon(iconImage)
-					.onClick(() -> LinkBrowser.browse(ChunkPickerLink.getUrl()))
-					.build();
-
-			clientToolbar.addNavigation(titleBarButton);
-		}
-		else
-		{
-			clientToolbar.removeNavigation(titleBarButton);
-		}
-	}
-
-	private void chunkAmountLookup(ChatMessage chatMessage, String message)
-	{
-		if (!config.chunkCommand()) return;
-
-		int totalChunks = Text.fromCSV(config.unlockedRegions()).size();
-
-		String response = new ChatMessageBuilder()
-				.append(ChatColorType.NORMAL)
-				.append("Total chunks")
-				.append(ChatColorType.NORMAL)
-				.append(" unlocked: ")
-				.append(ChatColorType.HIGHLIGHT)
-				.append(String.valueOf(totalChunks))
-				.build();
-
-		final MessageNode messageNode = chatMessage.getMessageNode();
-		messageNode.setRuneLiteFormatMessage(response);
-		chatMessageManager.update(messageNode);
-		client.refreshChat();
 	}
 }

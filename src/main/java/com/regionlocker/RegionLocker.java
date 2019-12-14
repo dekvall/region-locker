@@ -158,6 +158,20 @@ public class RegionLocker
 		return regions.get(id);
 	}
 
+	public static boolean hasRegion(int regionId)
+	{
+		//Fix this idk what it does
+		String key = Integer.toString(regionId);
+		return regions.containsKey(key) && regions.get(key) == RegionTypes.UNLOCKED;
+	}
+
+	public static boolean isBlacklisted(int regionId)
+	{
+		//Fix this idk what it does
+		String key = Integer.toString(regionId);
+		return regions.containsKey(key) && regions.get(key) == RegionTypes.BLACKLISTED;
+	}
+
 	public static boolean isUnlockable(int regionId)
 	{
 		RegionTypes type = getType(regionId);
